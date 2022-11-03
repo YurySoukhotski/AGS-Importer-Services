@@ -1,0 +1,42 @@
+image: maven:3-jdk-8
+
+stages:
+  - test
+  - deploy
+
+Test:
+  stage: test
+  tags:
+    - docker
+  script:
+    - mvn -q clean test
+
+Deploy to Nexus:
+  stage: deploy
+  tags:
+    - docker
+  only:
+    - develop
+  script:
+    - mvn -q package deploy
+
+SonarQube Analysis Preview:
+  stage: deploy
+  tags:
+    - docker
+  only:
+    - branches
+  except:
+    - develop
+    - master
+  script:
+    - mvn -q sonar:sonar -Dsonar.analysis.mode=preview -Dsonar.gitlab.project_id=$CI_PROJECT_PATH -Dsonar.gitlab.commit_sha=$CI_BUILD_REF -Dsonar.gitlab.ref_name=$CI_BUILD_REF_NAME
+
+SonarQube Analysis:
+  stage: deploy
+  tags:
+    - docker
+  only:
+    - develop
+  script:
+    - mvn -q package sonar:sonar
